@@ -2,11 +2,12 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 
-	"github.com/tylander732/youtube-creator-control/cmd/web"
 	"github.com/a-h/templ"
+	"github.com/tylander732/youtube-creator-control/cmd/web"
 )
 
 // Pointer to Server attachs the method to the server struct, and also states
@@ -20,6 +21,8 @@ func (s *Server) RegisterRoutes() http.Handler {
 	// See NewServer() call in server.go
 	mux.HandleFunc("/", s.HelloWorldHandler)
 	mux.HandleFunc("/health", s.healthHandler)
+
+	mux.HandleFunc("POST /post", s.UploadData)
 
 	fileServer := http.FileServer(http.FS(web.Files))
 
@@ -55,7 +58,9 @@ func (s *Server) healthHandler(w http.ResponseWriter, r *http.Request) {
 //TODO: Create an endpoint that will upload some data
 // And write it to the database
 func (s *Server) UploadData(w http.ResponseWriter, r *http.Request) {
-
+	fmt.Println("In upload Data method")
+	requestBody := r.Body
+	fmt.Println(requestBody)
 }
 
 //TODO: Create endpoint that will return data
