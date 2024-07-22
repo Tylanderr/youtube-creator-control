@@ -18,7 +18,10 @@ type Server struct {
 	db database.Service
 }
 
+// Returning a pointer to a struct to allow modification to the structs fields by the caller
+// A Server struct has a Handler, which contains ResponseWriters and Requests
 func NewServer() *http.Server {
+	//Atoi is equivalent to ParseInt. PORT is defined in the .env file
 	port, _ := strconv.Atoi(os.Getenv("PORT"))
 	NewServer := &Server{
 		port: port,
@@ -27,6 +30,7 @@ func NewServer() *http.Server {
 	}
 
 	// Declare Server config
+	// Return a pointer to the struct
 	server := &http.Server{
 		Addr:         fmt.Sprintf(":%d", NewServer.port),
 		Handler:      NewServer.RegisterRoutes(),
