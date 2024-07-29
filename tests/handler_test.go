@@ -30,3 +30,8 @@ func TestHandler(t *testing.T) {
 		t.Errorf("expected response body to be %v; got %v", expected, string(body))
 	}
 }
+
+// TODO: Create a test that will send json data to POST endpoint
+func postHandler(t *testing.T) {
+
+}
