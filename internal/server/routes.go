@@ -12,7 +12,7 @@ import (
 )
 
 type Request struct {
-	Metadata Metadata `json:"metadata"`
+	// Metadata Metadata `json:"metadata"`
 	Data     string   `json:"data"`
 	// Add functionality to support video files
 }
@@ -77,6 +77,8 @@ func (s *Server) UploadData(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+
+	fmt.Println("In the upload data method")
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
