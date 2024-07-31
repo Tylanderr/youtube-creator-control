@@ -6,14 +6,20 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
+	"time"
 
 	"github.com/a-h/templ"
 	"github.com/tylander732/youtube-creator-control/cmd/web"
 )
 
+// 1mb
+const MAXIMUM_FILE_SIZE = 1024 * 1024
+
 type Request struct {
 	// Metadata Metadata `json:"metadata"`
-	Data     string   `json:"data"`
+	Data string `json:"data"`
 	// Add functionality to support video files
 }
 
@@ -78,14 +84,13 @@ func (s *Server) UploadData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println("In the upload data method")
-
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Unable to read request body", http.StatusBadRequest)
 		return
 	}
 
+	// Close the request body once the processing has finished
 	defer r.Body.Close()
 
 	var data Request
@@ -103,6 +108,51 @@ func (s *Server) UploadData(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO: Pass user request data over to database
+}
+
+func (s *Server) UploadVideoFile(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+	
+	r.Body = http.MaxBytesReader(w, r.Body, MAXIMUM_FILE_SIZE)
+	if err := r.ParseMultipartForm(MAXIMUM_FILE_SIZE); err != nil {
+		http.Error(w, "The uploaded file is too big.", http.StatusBadRequest)
+		return
+	}
+
+	// The argument to FormFile must match the name attribute
+	// of the file input on the frontend
+	file, fileHeader, err := r.FormFile("file")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Close file when processing finishes
+	defer file.Close()
+
+	err = os.MkdirAll("./uploads", os.ModePerm)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Create new file in the upload directory
+	dst, err := os.Create(fmt.Sprintf("./uploads/%d%s", time.Now().UnixNano(), filepath.Ext(fileHeader.Filename)))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	defer dst.Close()
+
+	// Copy the uploaded file to the filesystem
+	_, err = io.Copy(dst, file)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 //TODO: Create endpoint that will return data
