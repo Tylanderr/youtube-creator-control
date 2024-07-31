@@ -132,6 +132,30 @@ func (s *Server) UploadVideoFile(w http.ResponseWriter, r *http.Request) {
 	// Close file when processing finishes
 	defer file.Close()
 
+	// Determine content type. Read the first 512 bytes
+	buff := make([]byte, 512)
+	_, err = file.Read(buff)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// DetectContentType considers at most the first 512 bytes
+	filetype := http.DetectContentType(buff)
+	if filetype != "image/jpeg" && filetype != "image/png" {
+		http.Error(w, "The provided file format is not allowed", http.StatusInternalServerError)
+		return
+	}
+
+	// When io.Copy is called later, it will continue reading from the point the file was at after
+	// reading the 512 bytes. Resulting in a corrupted image file
+	// file.Seek() returns the pointer back to the start of the file
+	_, err = file.Seek(0, io.SeekStart)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	err = os.MkdirAll("./uploads", os.ModePerm)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -153,6 +177,8 @@ func (s *Server) UploadVideoFile(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	fmt.Fprintf(w, "Upload successful")
 }
 
 //TODO: Create endpoint that will return data
