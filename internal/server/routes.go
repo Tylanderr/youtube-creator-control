@@ -44,6 +44,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	mux.HandleFunc("/health", s.healthHandler)
 
 	mux.HandleFunc("POST /post", s.UploadData)
+	mux.HandleFunc("POST /postMedia", s.UploadVideoFile)
 
 	fileServer := http.FileServer(http.FS(web.Files))
 
@@ -76,8 +77,8 @@ func (s *Server) healthHandler(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(jsonResp)
 }
 
-// TODO: Create an endpoint that will upload some data
-// And write it to the database
+//TODO: Update this to be used for endpoint -> database functionality
+// Such as user data changing?
 func (s *Server) UploadData(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -110,11 +111,12 @@ func (s *Server) UploadData(w http.ResponseWriter, r *http.Request) {
 	// TODO: Pass user request data over to database
 }
 
+// TODO: Replace hardcoded path locations
 func (s *Server) UploadVideoFile(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
-	
+
 	r.Body = http.MaxBytesReader(w, r.Body, MAXIMUM_FILE_SIZE)
 	if err := r.ParseMultipartForm(MAXIMUM_FILE_SIZE); err != nil {
 		http.Error(w, "The uploaded file is too big.", http.StatusBadRequest)
@@ -179,6 +181,10 @@ func (s *Server) UploadVideoFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprintf(w, "Upload successful")
+}
+
+func (s *Server) RetrieveVideoFile(w http.ResponseWriter, r *http.Request) {
+
 }
 
 //TODO: Create endpoint that will return data

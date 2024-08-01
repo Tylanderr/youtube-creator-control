@@ -28,3 +28,7 @@ tmp/
 # Project build
 main
 *templ.go
+
+# Media and test files
+uploads/
+tests/media/bak/
