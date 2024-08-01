@@ -40,10 +40,8 @@ func (s *Server) RegisterRoutes() http.Handler {
 	// HelloWorldHandler becomes bound to the receiver s, when HandleFunc is called.
 	// So the ResponseWriter and Request parameters are implicitly passed
 	// See NewServer() call in server.go
-	mux.HandleFunc("/", s.HelloWorldHandler)
 	mux.HandleFunc("/health", s.healthHandler)
 
-	mux.HandleFunc("POST /post", s.UploadData)
 	mux.HandleFunc("POST /postMedia", s.UploadVideoFile)
 
 	fileServer := http.FileServer(http.FS(web.Files))
@@ -55,17 +53,6 @@ func (s *Server) RegisterRoutes() http.Handler {
 	return mux
 }
 
-func (s *Server) HelloWorldHandler(w http.ResponseWriter, r *http.Request) {
-	resp := make(map[string]string)
-	resp["message"] = "Hello World"
-
-	jsonResp, err := json.Marshal(resp)
-	if err != nil {
-		log.Fatalf("error handling JSON marshal. Err: %v", err)
-	}
-
-	_, _ = w.Write(jsonResp)
-}
 
 func (s *Server) healthHandler(w http.ResponseWriter, r *http.Request) {
 	jsonResp, err := json.Marshal(s.db.Health())
@@ -75,40 +62,6 @@ func (s *Server) healthHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_, _ = w.Write(jsonResp)
-}
-
-//TODO: Update this to be used for endpoint -> database functionality
-// Such as user data changing?
-func (s *Server) UploadData(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, "Unable to read request body", http.StatusBadRequest)
-		return
-	}
-
-	// Close the request body once the processing has finished
-	defer r.Body.Close()
-
-	var data Request
-	if err := json.Unmarshal(body, &data); err != nil {
-		http.Error(w, "Invalid JSON", http.StatusBadRequest)
-		return
-	}
-
-	fmt.Printf("Recieved data: %+v\n", data)
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(data); err != nil {
-		http.Error(w, "Unable to encode response", http.StatusInternalServerError)
-	}
-
-	// TODO: Pass user request data over to database
 }
 
 // TODO: Replace hardcoded path locations
@@ -125,6 +78,8 @@ func (s *Server) UploadVideoFile(w http.ResponseWriter, r *http.Request) {
 
 	// The argument to FormFile must match the name attribute
 	// of the file input on the frontend
+	// Ex: curl -F "file/=@/media/blah"
+	// or: curl -F "image/=@/media/blah"
 	file, fileHeader, err := r.FormFile("file")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -180,11 +135,67 @@ func (s *Server) UploadVideoFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintf(w, "Upload successful")
+	fmt.Fprintf(w, "Upload successful \n")
+
+	//TODO: DB Update with fileID and relevant user data
 }
 
+//TODO: Endpoint for retreiving media file
 func (s *Server) RetrieveVideoFile(w http.ResponseWriter, r *http.Request) {
 
 }
 
-//TODO: Create endpoint that will return data
+//TODO: Endpoint for retreiving user information
+// List of videos uploaded
+// List of shared videos
+func (s *Server) getVideoIdList(w http.ResponseWriter, r *http.Request) {
+
+}
+
+
+
+
+////////// REFERENCE CODE //////////
+
+
+func (s *Server) HelloWorldHandler(w http.ResponseWriter, r *http.Request) {
+	resp := make(map[string]string)
+	resp["message"] = "Hello World"
+
+	jsonResp, err := json.Marshal(resp)
+	if err != nil {
+		log.Fatalf("error handling JSON marshal. Err: %v", err)
+	}
+
+	_, _ = w.Write(jsonResp)
+}
+
+func (s *Server) UploadData(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Unable to read request body", http.StatusBadRequest)
+		return
+	}
+
+	// Close the request body once the processing has finished
+	defer r.Body.Close()
+
+	var data Request
+	if err := json.Unmarshal(body, &data); err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	fmt.Printf("Recieved data: %+v\n", data)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(data); err != nil {
+		http.Error(w, "Unable to encode response", http.StatusInternalServerError)
+	}
+}
