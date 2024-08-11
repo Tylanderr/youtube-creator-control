@@ -41,7 +41,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	// So the ResponseWriter and Request parameters are implicitly passed
 	// See NewServer() call in server.go
 	mux.HandleFunc("/health", s.healthHandler)
-	mux.HandleFunc("POST /write", s.writeHandler)
+	mux.HandleFunc("POST /newUser", s.newUserHandler)
 
 	mux.HandleFunc("POST /postMedia", s.UploadVideoFile)
 
@@ -64,8 +64,8 @@ func (s *Server) healthHandler(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(jsonResp)
 }
 
-func (s *Server) writeHandler(w http.ResponseWriter, r *http.Request) {
-	jsonResp, err := json.Marshal(s.db.Write())
+func (s *Server) newUserHandler(w http.ResponseWriter, r *http.Request) {
+	jsonResp, err := json.Marshal(s.db.AddNewUser())
 
 	if err != nil {
 		log.Fatalf("error handling JSON masrshal. Err: %v", err)

@@ -20,7 +20,7 @@ type Service interface {
 	Health() map[string]string
 
 	// Write to the DB
-	Write() map[string]string
+	AddNewUser() map[string]string
 
 	// Close terminates the database connection.
 	// It returns an error if the connection cannot be closed.
@@ -117,9 +117,19 @@ func (s *service) Close() error {
 	return s.db.Close()
 }
 
-func (s *service) Write() map[string]string {
-	log.Printf("Writing to database: %s", database)
-	stats := make(map[string]string)
-	stats["write_successful"] = "true"
-	return stats
+// TODO: Finish
+func (s *service) AddNewUser() map[string]string {
+	status := make(map[string]string)
+
+	query := `INSERT INTO users (name, email) VALUES ($1, $2)`
+	_, err := s.db.Exec(query, "Tyler", "test@gmail.com")
+
+	if err != nil {
+		log.Fatalf("%s", err)
+	} else {
+		log.Printf("Writing to database: %s", database)
+		status["write_successful"] = "true"
+	}
+
+	return status
 }
