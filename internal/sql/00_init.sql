@@ -1,6 +1,7 @@
-CREATE DATABASE creator_control;
-
+-- Connect to creator_control database
 \c creator_control
+
+-- Table creation
 
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
@@ -8,6 +9,6 @@ CREATE TABLE users (
     email VARCHAR(100) UNIQUE NOT NULL
 );
 
-create table media (
+CREATE TABLE media (
     id SERIAL PRIMARY KEY
 );
