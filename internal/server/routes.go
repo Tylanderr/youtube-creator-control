@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/a-h/templ"
+	// "github.com/a-h/templ"
 	"github.com/tylander732/youtube-creator-control/cmd/web"
 )
 
@@ -41,13 +41,13 @@ func (s *Server) RegisterRoutes() http.Handler {
 	// So the ResponseWriter and Request parameters are implicitly passed
 	// See NewServer() call in server.go
 	mux.HandleFunc("/health", s.healthHandler)
+	mux.HandleFunc("POST /write", s.writeHandler)
 
 	mux.HandleFunc("POST /postMedia", s.UploadVideoFile)
 
 	fileServer := http.FileServer(http.FS(web.Files))
 
 	mux.Handle("/assets/", fileServer)
-	mux.Handle("/web", templ.Handler(web.HelloForm()))
 	mux.HandleFunc("/hello", web.HelloWebHandler)
 
 	return mux
@@ -62,6 +62,17 @@ func (s *Server) healthHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_, _ = w.Write(jsonResp)
+}
+
+func (s *Server) writeHandler(w http.ResponseWriter, r *http.Request) {
+	jsonResp, err := json.Marshal(s.db.Write())
+
+	if err != nil {
+		log.Fatalf("error handling JSON masrshal. Err: %v", err)
+	}
+
+	_, _ = w.Write(jsonResp)
+
 }
 
 // TODO: Replace hardcoded path locations

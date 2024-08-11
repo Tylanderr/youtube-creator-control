@@ -19,6 +19,9 @@ type Service interface {
 	// The keys and values in the map are service-specific.
 	Health() map[string]string
 
+	// Write to the DB
+	Write() map[string]string
+
 	// Close terminates the database connection.
 	// It returns an error if the connection cannot be closed.
 	Close() error
@@ -112,4 +115,11 @@ func (s *service) Health() map[string]string {
 func (s *service) Close() error {
 	log.Printf("Disconnected from database: %s", database)
 	return s.db.Close()
+}
+
+func (s *service) Write() map[string]string {
+	log.Printf("Writing to database: %s", database)
+	stats := make(map[string]string)
+	stats["write_successful"] = "true"
+	return stats
 }
