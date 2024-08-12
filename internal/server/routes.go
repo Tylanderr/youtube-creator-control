@@ -17,6 +17,10 @@ import (
 // 1mb
 const MAXIMUM_FILE_SIZE = 1024 * 1024
 
+//TODO: Ensure that the requests I'm receiving are valid and match only acceptable parameters
+//TODO: Create structs representing acceptable requests for user creation
+
+
 type Request struct {
 	// Metadata Metadata `json:"metadata"`
 	Data string `json:"data"`
@@ -35,18 +39,21 @@ type Metadata struct {
 // that modification to the struct will happen
 func (s *Server) RegisterRoutes() http.Handler {
 
-	mux := http.NewServeMux()
-
-	// HelloWorldHandler becomes bound to the receiver s, when HandleFunc is called.
+	// Handlers becomes bound to the receiver s, when HandleFunc is called.
 	// So the ResponseWriter and Request parameters are implicitly passed
 	// See NewServer() call in server.go
-	mux.HandleFunc("/health", s.healthHandler)
-	mux.HandleFunc("POST /newUser", s.newUserHandler)
+	mux := http.NewServeMux()
 
+	// POST handlers
+	mux.HandleFunc("POST /newUser", s.newUserHandler)
 	mux.HandleFunc("POST /postMedia", s.UploadVideoFile)
 
-	fileServer := http.FileServer(http.FS(web.Files))
+	// GET handlers
+	mux.HandleFunc("GET /getUser", s.getUserHandler)
 
+
+	fileServer := http.FileServer(http.FS(web.Files))
+	mux.HandleFunc("/health", s.healthHandler)
 	mux.Handle("/assets/", fileServer)
 	mux.HandleFunc("/hello", web.HelloWebHandler)
 
@@ -65,7 +72,11 @@ func (s *Server) healthHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) newUserHandler(w http.ResponseWriter, r *http.Request) {
-	jsonResp, err := json.Marshal(s.db.AddNewUser())
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+
+	jsonResp, err := json.Marshal(s.db.AddNewUser("test@gmail.com", "Tyler"))
 
 	if err != nil {
 		log.Fatalf("error handling JSON masrshal. Err: %v", err)
@@ -73,6 +84,15 @@ func (s *Server) newUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	_, _ = w.Write(jsonResp)
 
+}
+
+func (s *Server) getUserHandler(w http.ResponseWriter, r *http.Request) {
+	jsonResp, err := json.Marshal(s.db.GetUserByEmail("test@gmail.com"))
+	if err != nil {
+		log.Fatalf("error handling JSON masrshal. Err: %v", err)
+	}
+
+	_, _ = w.Write(jsonResp)
 }
 
 // TODO: Replace hardcoded path locations

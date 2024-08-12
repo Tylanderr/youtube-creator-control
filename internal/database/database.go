@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/google/uuid"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	_ "github.com/joho/godotenv/autoload"
 )
@@ -20,7 +21,8 @@ type Service interface {
 	Health() map[string]string
 
 	// Write to the DB
-	AddNewUser() map[string]string
+	AddNewUser(email string, name string) map[string]string
+	GetUserByEmail(email string) User
 
 	// Close terminates the database connection.
 	// It returns an error if the connection cannot be closed.
@@ -29,6 +31,12 @@ type Service interface {
 
 type service struct {
 	db *sql.DB
+}
+
+type User struct {
+	Id    uuid.UUID
+	Name  string
+	Email string
 }
 
 var (
@@ -117,19 +125,32 @@ func (s *service) Close() error {
 	return s.db.Close()
 }
 
-// TODO: Finish
-func (s *service) AddNewUser() map[string]string {
+func (s *service) AddNewUser(email string, name string) map[string]string {
 	status := make(map[string]string)
 
 	query := `INSERT INTO users (name, email) VALUES ($1, $2)`
 	_, err := s.db.Exec(query, "Tyler", "test@gmail.com")
 
 	if err != nil {
-		log.Fatalf("%s", err)
-	} else {
-		log.Printf("Writing to database: %s", database)
-		status["write_successful"] = "true"
+		log.Fatal(err)
 	}
 
+	log.Printf("Writing to database: %s", database)
+	status["write_successful"] = "true"
+
 	return status
+}
+
+func (s *service) GetUserByEmail(email string) User {
+	query := `SELECT * FROM users WHERE email = $1`
+
+	var user User
+
+	err := s.db.QueryRow(query, email).Scan(&user.Id, &user.Name, &user.Email)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return user
 }
