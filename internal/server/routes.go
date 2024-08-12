@@ -20,7 +20,6 @@ const MAXIMUM_FILE_SIZE = 1024 * 1024
 //TODO: Ensure that the requests I'm receiving are valid and match only acceptable parameters
 //TODO: Create structs representing acceptable requests for user creation
 
-
 type Request struct {
 	// Metadata Metadata `json:"metadata"`
 	Data string `json:"data"`
@@ -51,7 +50,6 @@ func (s *Server) RegisterRoutes() http.Handler {
 	// GET handlers
 	mux.HandleFunc("GET /getUser", s.getUserHandler)
 
-
 	fileServer := http.FileServer(http.FS(web.Files))
 	mux.HandleFunc("/health", s.healthHandler)
 	mux.Handle("/assets/", fileServer)
@@ -59,7 +57,6 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 	return mux
 }
-
 
 func (s *Server) healthHandler(w http.ResponseWriter, r *http.Request) {
 	jsonResp, err := json.Marshal(s.db.Health())
@@ -74,8 +71,12 @@ func (s *Server) healthHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) newUserHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
 	}
 
+	//TODO: Validate incoming request
+
+	//TODO: Replace with incoming request body values
 	jsonResp, err := json.Marshal(s.db.AddNewUser("test@gmail.com", "Tyler"))
 
 	if err != nil {
@@ -87,7 +88,30 @@ func (s *Server) newUserHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) getUserHandler(w http.ResponseWriter, r *http.Request) {
-	jsonResp, err := json.Marshal(s.db.GetUserByEmail("test@gmail.com"))
+	type createUser struct {
+		email string
+	}
+
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method now allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Unable to read request body", http.StatusBadRequest)
+		return
+	}
+
+	defer r.Body.Close()
+
+	var user createUser
+	if err := json.Unmarshal(body, &user); err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	jsonResp, err := json.Marshal(s.db.GetUserByEmail(user.email))
 	if err != nil {
 		log.Fatalf("error handling JSON masrshal. Err: %v", err)
 	}
@@ -99,6 +123,7 @@ func (s *Server) getUserHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) UploadVideoFile(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
 	}
 
 	r.Body = http.MaxBytesReader(w, r.Body, MAXIMUM_FILE_SIZE)
@@ -171,35 +196,19 @@ func (s *Server) UploadVideoFile(w http.ResponseWriter, r *http.Request) {
 	//TODO: DB Update with fileID and relevant user data
 }
 
-//TODO: Endpoint for retreiving media file
+// TODO: Endpoint for retreiving media file
 func (s *Server) RetrieveVideoFile(w http.ResponseWriter, r *http.Request) {
 
 }
 
-//TODO: Endpoint for retreiving user information
+// TODO: Endpoint for retreiving user information
 // List of videos uploaded
 // List of shared videos
 func (s *Server) getVideoIdList(w http.ResponseWriter, r *http.Request) {
 
 }
 
-
-
-
 ////////// REFERENCE CODE //////////
-
-
-func (s *Server) HelloWorldHandler(w http.ResponseWriter, r *http.Request) {
-	resp := make(map[string]string)
-	resp["message"] = "Hello World"
-
-	jsonResp, err := json.Marshal(resp)
-	if err != nil {
-		log.Fatalf("error handling JSON marshal. Err: %v", err)
-	}
-
-	_, _ = w.Write(jsonResp)
-}
 
 func (s *Server) UploadData(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {

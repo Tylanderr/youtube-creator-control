@@ -7,4 +7,11 @@ CREATE TABLE users (
 
 CREATE TABLE media (
     id SERIAL PRIMARY KEY
+    -- Associate media file with users id
+    -- Filenames are unique values
+);
+
+CREATE TABLE collaborators (
+    -- Primary key will be id for user. Foreign key to users table
+    -- id list of all users that are collaborators
 );
