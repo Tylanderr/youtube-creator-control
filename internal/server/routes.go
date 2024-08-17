@@ -12,6 +12,7 @@ import (
 
 	// "github.com/a-h/templ"
 	"github.com/tylanderr/youtube-creator-control/cmd/web"
+	"github.com/tylanderr/youtube-creator-control/internal/structs"
 )
 
 // 1mb
@@ -68,42 +69,20 @@ func (s *Server) healthHandler(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(jsonResp)
 }
 
-func (s *Server) newUserHandler(w http.ResponseWriter, r *http.Request) {
-	type createUserRequest struct {
-		Email string `json:"email"`
-		FirstName string
-		LastName string
-	}
 
+/////////// Post Methods ///////////
+
+func (s *Server) newUserHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	//TODO: Validate incoming request
-
-	//TODO: Replace with incoming request body values
-	jsonResp, err := json.Marshal(s.db.AddNewUser("test@gmail.com", "Tyler"))
-
-	if err != nil {
-		log.Fatalf("error handling JSON masrshal. Err: %v", err)
-	}
-
-	_, _ = w.Write(jsonResp)
-
-}
-
-func (s *Server) getUserHandler(w http.ResponseWriter, r *http.Request) {
-	type getUserRequest struct {
-		Email string `json:"email"`
-	}
-
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method now allowed", http.StatusMethodNotAllowed)
-		return
-	}
+	//TODO: Add check for if the provided username already exists in the DB
 
 	body, err := io.ReadAll(r.Body)
+	// __AUTO_GENERATED_PRINT_VAR_START__
+	fmt.Println(fmt.Sprintf("newUserHandler body: %v", body)) // __AUTO_GENERATED_PRINT_VAR_END__
 	if err != nil {
 		http.Error(w, "Unable to read request body", http.StatusBadRequest)
 		return
@@ -111,18 +90,19 @@ func (s *Server) getUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	defer r.Body.Close()
 
-	var user getUserRequest
-	if err := json.Unmarshal(body, &user); err != nil {
+	var addUser structs.AddUser
+	if err := json.Unmarshal(body, &addUser); err != nil {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
 
-	jsonResp, err := json.Marshal(s.db.GetUserByEmail(user.Email))
+	jsonResp, err := json.Marshal(s.db.AddNewUser(addUser))
 	if err != nil {
 		log.Fatalf("error handling JSON masrshal. Err: %v", err)
 	}
 
 	_, _ = w.Write(jsonResp)
+
 }
 
 // TODO: Replace hardcoded path locations
@@ -201,6 +181,41 @@ func (s *Server) UploadVideoFile(w http.ResponseWriter, r *http.Request) {
 
 	//TODO: DB Update with fileID and relevant user data
 }
+
+/////////// GET Methods ///////////
+
+func (s *Server) getUserHandler(w http.ResponseWriter, r *http.Request) {
+	type getUserRequest struct {
+		Email string `json:"email"`
+	}
+
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method now allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Unable to read request body", http.StatusBadRequest)
+		return
+	}
+
+	defer r.Body.Close()
+
+	var user getUserRequest
+	if err := json.Unmarshal(body, &user); err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	jsonResp, err := json.Marshal(s.db.GetUserByEmail(user.Email))
+	if err != nil {
+		log.Fatalf("error handling JSON masrshal. Err: %v", err)
+	}
+
+	_, _ = w.Write(jsonResp)
+}
+
 
 // TODO: Endpoint for retreiving media file
 func (s *Server) RetrieveVideoFile(w http.ResponseWriter, r *http.Request) {

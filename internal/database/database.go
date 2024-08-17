@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	_ "github.com/joho/godotenv/autoload"
+	"github.com/tylanderr/youtube-creator-control/internal/structs"
 )
 
 // Service represents a service that interacts with a database.
@@ -21,7 +22,7 @@ type Service interface {
 	Health() map[string]string
 
 	// Write to the DB
-	AddNewUser(email string, name string) map[string]string
+	AddNewUser(addUser structs.AddUser) map[string]string
 	GetUserByEmail(email string) User
 
 	// Close terminates the database connection.
@@ -126,14 +127,13 @@ func (s *service) Close() error {
 	return s.db.Close()
 }
 
-func (s *service) AddNewUser(email string, name string) map[string]string {
-	type newUser struct {
-	}
+func (s *service) AddNewUser(addUser structs.AddUser) map[string]string {
+	
 
 	status := make(map[string]string)
 
 	query := `INSERT INTO users (email, first_name, last_name) VALUES ($1, $2, $3)`
-	_, err := s.db.Exec(query, "test@gmail.com", "Tyler", "Harding")
+	_, err := s.db.Exec(query, addUser.Email, addUser.FirstName, addUser.LastName)
 
 	if err != nil {
 		log.Fatal(err)
