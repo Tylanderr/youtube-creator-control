@@ -9,7 +9,7 @@ import (
 
 	_ "github.com/joho/godotenv/autoload"
 
-	"github.com/tylander732/youtube-creator-control/internal/database"
+	"github.com/tylanderr/youtube-creator-control/internal/database"
 )
 
 type Server struct {

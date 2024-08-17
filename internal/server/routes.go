@@ -11,7 +11,7 @@ import (
 	"time"
 
 	// "github.com/a-h/templ"
-	"github.com/tylander732/youtube-creator-control/cmd/web"
+	"github.com/tylanderr/youtube-creator-control/cmd/web"
 )
 
 // 1mb

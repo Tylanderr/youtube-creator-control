@@ -1,7 +1,7 @@
 package tests
 
 import (
-	"github.com/tylander732/youtube-creator-control/internal/server"
+	"github.com/tylanderr/youtube-creator-control/internal/server"
 	"io"
 	"net/http"
 	"net/http/httptest"

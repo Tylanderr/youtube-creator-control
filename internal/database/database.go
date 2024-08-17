@@ -28,15 +28,16 @@ type Service interface {
 	// It returns an error if the connection cannot be closed.
 	Close() error
 }
-     
+
 type service struct {
 	db *sql.DB
 }
 
 type User struct {
-	Id    uuid.UUID
-	Name  string
-	Email string
+	Id        uuid.UUID
+	Email     string
+	FirstName string
+	LastName  string
 }
 
 var (
@@ -127,13 +128,11 @@ func (s *service) Close() error {
 
 func (s *service) AddNewUser(email string, name string) map[string]string {
 	type newUser struct {
-
 	}
-
 
 	status := make(map[string]string)
 
-	query := `INSERT INTO users (email, first_name, last_name) VALUES ($1, $2)`
+	query := `INSERT INTO users (email, first_name, last_name) VALUES ($1, $2, $3)`
 	_, err := s.db.Exec(query, "test@gmail.com", "Tyler", "Harding")
 
 	if err != nil {
@@ -151,7 +150,7 @@ func (s *service) GetUserByEmail(email string) User {
 
 	var user User
 
-	err := s.db.QueryRow(query, email).Scan(&user.Id, &user.Name, &user.Email)
+	err := s.db.QueryRow(query, email).Scan(&user.Id, &user.Email, &user.FirstName, &user.LastName)
 
 	if err != nil {
 		log.Fatal(err)

@@ -1,4 +1,4 @@
-module github.com/tylander732/youtube-creator-control
+module github.com/tylanderr/youtube-creator-control
 
 go 1.22.3
 
