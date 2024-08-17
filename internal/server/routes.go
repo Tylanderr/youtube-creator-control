@@ -69,6 +69,12 @@ func (s *Server) healthHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) newUserHandler(w http.ResponseWriter, r *http.Request) {
+	type createUserRequest struct {
+		Email string `json:"email"`
+		FirstName string
+		LastName string
+	}
+
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -88,8 +94,8 @@ func (s *Server) newUserHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) getUserHandler(w http.ResponseWriter, r *http.Request) {
-	type createUser struct {
-		email string
+	type getUserRequest struct {
+		Email string `json:"email"`
 	}
 
 	if r.Method != http.MethodGet {
@@ -105,13 +111,13 @@ func (s *Server) getUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	defer r.Body.Close()
 
-	var user createUser
+	var user getUserRequest
 	if err := json.Unmarshal(body, &user); err != nil {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
 
-	jsonResp, err := json.Marshal(s.db.GetUserByEmail(user.email))
+	jsonResp, err := json.Marshal(s.db.GetUserByEmail(user.Email))
 	if err != nil {
 		log.Fatalf("error handling JSON masrshal. Err: %v", err)
 	}
