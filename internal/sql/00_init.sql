@@ -1,5 +1,5 @@
 CREATE TABLE users (
-    id uuid DEFAULT gen_random_uuid(),
+    id UUID DEFAULT gen_random_uuid(),
     email VARCHAR(100) UNIQUE NOT NULL,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
@@ -7,9 +7,9 @@ CREATE TABLE users (
 );
 
 CREATE TABLE media (
-    id SERIAL PRIMARY KEY
-    -- Associate media file with users id
-    -- Filenames are unique values
+    file_id UUID PRIMARY KEY,
+    user_id UUID,
+    FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 CREATE TABLE collaborators (

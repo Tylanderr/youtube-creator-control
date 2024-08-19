@@ -23,6 +23,7 @@ type Service interface {
 
 	// Write to the DB
 	AddNewUser(addUser structs.AddUser) map[string]string
+	MediaUpload(fileId uuid.UUID, userId uuid.UUID) map[string]string
 	GetUserByEmail(email string) User
 
 	// Close terminates the database connection.
@@ -163,4 +164,21 @@ func (s *service) GetUserByEmail(email string) User {
 	}
 
 	return user
+}
+
+func (s *service) MediaUpload(fileId uuid.UUID, userId uuid.UUID) map[string]string {
+	status := make(map[string]string)
+
+	query := `INSERT INTO media (file_id, user_id) VALUES ($1, $2)`
+	_, err := s.db.Exec(query, fileId)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Printf("Writing to database: %s", database)
+	status["write_successful"] = "true"
+
+	return status
+
 }

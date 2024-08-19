@@ -10,9 +10,9 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"time"
 
 	// "github.com/a-h/templ"
+	"github.com/google/uuid"
 	"github.com/tylanderr/youtube-creator-control/cmd/web"
 	"github.com/tylanderr/youtube-creator-control/internal/database"
 	"github.com/tylanderr/youtube-creator-control/internal/structs"
@@ -20,9 +20,6 @@ import (
 
 // 1mb
 const MAXIMUM_FILE_SIZE = 1024 * 1024
-
-//TODO: Ensure that the requests I'm receiving are valid and match only acceptable parameters
-//TODO: Create structs representing acceptable requests for user creation
 
 type Request struct {
 	// Metadata Metadata `json:"metadata"`
@@ -174,8 +171,11 @@ func (s *Server) UploadVideoFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	//TODO: NEXT - There are issues with how this uuid is being made
+	fileId := uuid.New()
+
 	// Create new file in the upload directory
-	dst, err := os.Create(fmt.Sprintf("./uploads/%d%s", time.Now().UnixNano(), filepath.Ext(fileHeader.Filename)))
+	dst, err := os.Create(fmt.Sprintf("./uploads/%d%s", fileId, filepath.Ext(fileHeader.Filename)))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -190,9 +190,20 @@ func (s *Server) UploadVideoFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintf(w, "Upload successful \n")
+	//When I write back to the writer, do I stop processing?
+	fmt.Fprintf(w, "Uploaded file has been copied to file system\n")
+	
+	fmt.Println("About to get user")
 
-	//TODO: DB Update with fileID and relevant user data
+	response := s.db.GetUserByEmail("test@gmail.com")
+
+	// fmt.Fprintf(w, "Associating file: " + dst.Name() + "to user: " + response.Id.String())
+	fmt.Println("Associating file: " + dst.Name() + "to user: " + response.Id.String())
+
+	s.db.MediaUpload(fileId, response.Id)
+
+	fmt.Println("Upload successful")
+
 }
 
 /////////// GET Methods ///////////

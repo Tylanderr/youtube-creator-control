@@ -4,7 +4,6 @@
 - Simple API for uploading contents to a server that can later be retreived
 
 ## Backend
-- User Creation
 - Authentication service
 - Database setup
     - Video file storage
@@ -29,3 +28,6 @@
 
 ## Resources
 - https://freshman.tech/file-upload-golang/
+
+## Done
+- User Creation
