@@ -2,16 +2,19 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
 	"time"
 
 	// "github.com/a-h/templ"
 	"github.com/tylanderr/youtube-creator-control/cmd/web"
+	"github.com/tylanderr/youtube-creator-control/internal/database"
 	"github.com/tylanderr/youtube-creator-control/internal/structs"
 )
 
@@ -69,20 +72,17 @@ func (s *Server) healthHandler(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(jsonResp)
 }
 
-
 /////////// Post Methods ///////////
 
 func (s *Server) newUserHandler(w http.ResponseWriter, r *http.Request) {
+	var addUser structs.AddUser
+
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	//TODO: Add check for if the provided username already exists in the DB
-
 	body, err := io.ReadAll(r.Body)
-	// __AUTO_GENERATED_PRINT_VAR_START__
-	fmt.Println(fmt.Sprintf("newUserHandler body: %v", body)) // __AUTO_GENERATED_PRINT_VAR_END__
 	if err != nil {
 		http.Error(w, "Unable to read request body", http.StatusBadRequest)
 		return
@@ -90,9 +90,22 @@ func (s *Server) newUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	defer r.Body.Close()
 
-	var addUser structs.AddUser
 	if err := json.Unmarshal(body, &addUser); err != nil {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	// Validate that all fields for addUser are present
+	err = ValidateStruct(addUser)
+	if err != nil {
+		http.Error(w, "Missing required fields", http.StatusBadRequest)
+		return
+	}
+
+	response := s.db.GetUserByEmail(addUser.Email)
+	// If response isn't an empty User struct, then email already in use
+	if response != (database.User{}) {
+		http.Error(w, "Email addresss already in use", http.StatusBadRequest)
 		return
 	}
 
@@ -216,7 +229,6 @@ func (s *Server) getUserHandler(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(jsonResp)
 }
 
-
 // TODO: Endpoint for retreiving media file
 func (s *Server) RetrieveVideoFile(w http.ResponseWriter, r *http.Request) {
 
@@ -227,6 +239,46 @@ func (s *Server) RetrieveVideoFile(w http.ResponseWriter, r *http.Request) {
 // List of shared videos
 func (s *Server) getVideoIdList(w http.ResponseWriter, r *http.Request) {
 
+}
+
+// WARN: Got this from an article. Double check
+// https://medium.com/@anajankow/fast-check-if-all-struct-fields-are-set-in-golang-bba1917213d2
+func ValidateStruct(s interface{}) (err error) {
+	// first make sure that the input is a struct
+	// having any other type, especially a pointer to a struct,
+	// might result in panic
+	structType := reflect.TypeOf(s)
+	if structType.Kind() != reflect.Struct {
+		return errors.New("input param should be a struct")
+	}
+
+	// now go one by one through the fields and validate their value
+	structVal := reflect.ValueOf(s)
+	fieldNum := structVal.NumField()
+
+	for i := 0; i < fieldNum; i++ {
+		// Field(i) returns i'th value of the struct
+		field := structVal.Field(i)
+		fieldName := structType.Field(i).Name
+
+		// CAREFUL! IsZero interprets empty strings and int equal 0 as a zero value.
+		// To check only if the pointers have been initialized,
+
+		// you can check the kind of the field:
+		// if field.Kind() == reflect.Pointer { // check }
+
+		// IsZero panics if the value is invalid.
+		// Most functions and methods never return an invalid Value.
+
+		isSet := field.IsValid() && !field.IsZero()
+
+		if !isSet {
+			err = errors.New(fmt.Sprintf("%v%s in not set; ", err, fieldName))
+		}
+
+	}
+
+	return err
 }
 
 ////////// REFERENCE CODE //////////

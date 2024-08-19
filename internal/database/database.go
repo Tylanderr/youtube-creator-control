@@ -128,7 +128,6 @@ func (s *service) Close() error {
 }
 
 func (s *service) AddNewUser(addUser structs.AddUser) map[string]string {
-	
 
 	status := make(map[string]string)
 
@@ -153,7 +152,14 @@ func (s *service) GetUserByEmail(email string) User {
 	err := s.db.QueryRow(query, email).Scan(&user.Id, &user.Email, &user.FirstName, &user.LastName)
 
 	if err != nil {
-		log.Fatal(err)
+		// If the error is noRows, it means the email provided is not in use.
+		// Return empty User struct
+		if err == sql.ErrNoRows {
+			fmt.Println(err)
+			return User{}
+		} else {
+			log.Fatalf("Query failed: %v", err)
+		}
 	}
 
 	return user
