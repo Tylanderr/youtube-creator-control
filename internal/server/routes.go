@@ -20,6 +20,7 @@ import (
 
 // 1mb
 const MAXIMUM_FILE_SIZE = 1024 * 1024
+const UPLOAD_DIRECTORY = "./uploads/"
 
 type Request struct {
 	// Metadata Metadata `json:"metadata"`
@@ -46,7 +47,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 	// POST handlers
 	mux.HandleFunc("POST /newUser", s.newUserHandler)
-	mux.HandleFunc("POST /postMedia", s.UploadVideoFile)
+	mux.HandleFunc("POST /postMedia", s.UploadMediaFile)
 
 	// GET handlers
 	mux.HandleFunc("GET /getUser", s.getUserHandler)
@@ -115,8 +116,7 @@ func (s *Server) newUserHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-// TODO: Replace hardcoded path locations
-func (s *Server) UploadVideoFile(w http.ResponseWriter, r *http.Request) {
+func (s *Server) UploadMediaFile(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -165,17 +165,16 @@ func (s *Server) UploadVideoFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = os.MkdirAll("./uploads", os.ModePerm)
+	err = os.MkdirAll(UPLOAD_DIRECTORY, os.ModePerm)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	//TODO: NEXT - There are issues with how this uuid is being made
 	fileId := uuid.New()
 
 	// Create new file in the upload directory
-	dst, err := os.Create(fmt.Sprintf("./uploads/%d%s", fileId, filepath.Ext(fileHeader.Filename)))
+	dst, err := os.Create(fmt.Sprintf("%v%v%s", UPLOAD_DIRECTORY, fileId, filepath.Ext(fileHeader.Filename)))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -190,20 +189,12 @@ func (s *Server) UploadVideoFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//When I write back to the writer, do I stop processing?
-	fmt.Fprintf(w, "Uploaded file has been copied to file system\n")
-	
-	fmt.Println("About to get user")
-
+	//TODO: Replace this
 	response := s.db.GetUserByEmail("test@gmail.com")
-
-	// fmt.Fprintf(w, "Associating file: " + dst.Name() + "to user: " + response.Id.String())
-	fmt.Println("Associating file: " + dst.Name() + "to user: " + response.Id.String())
 
 	s.db.MediaUpload(fileId, response.Id)
 
-	fmt.Println("Upload successful")
-
+	fmt.Fprintf(w, "Upload successful\n")
 }
 
 /////////// GET Methods ///////////

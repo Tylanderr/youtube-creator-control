@@ -170,7 +170,7 @@ func (s *service) MediaUpload(fileId uuid.UUID, userId uuid.UUID) map[string]str
 	status := make(map[string]string)
 
 	query := `INSERT INTO media (file_id, user_id) VALUES ($1, $2)`
-	_, err := s.db.Exec(query, fileId)
+	_, err := s.db.Exec(query, fileId, userId)
 
 	if err != nil {
 		log.Fatal(err)
