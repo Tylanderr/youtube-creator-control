@@ -190,6 +190,7 @@ func (s *Server) UploadMediaFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//TODO: Replace this
+	// Pass user email when request comes from front end?
 	response := s.db.GetUserByEmail("test@gmail.com")
 
 	s.db.MediaUpload(fileId, response.Id)
@@ -240,7 +241,29 @@ func (s *Server) RetrieveVideoFile(w http.ResponseWriter, r *http.Request) {
 // List of videos uploaded
 // List of shared videos
 func (s *Server) getVideoIdList(w http.ResponseWriter, r *http.Request) {
+	type getUser struct {
+		Email string `json:"email"`
+	}
 
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Unable to read request body", http.StatusBadRequest)
+		return
+	}
+
+	defer r.Body.Close()
+
+	var user getUser
+	if err := json.Unmarshal(body, &user); err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+	//TODO: Finish
 }
 
 // WARN: Got this from an article. Double check
