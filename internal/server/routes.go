@@ -51,6 +51,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 	// GET handlers
 	mux.HandleFunc("GET /getUser", s.getUserHandler)
+	mux.HandleFunc("GET /files", s.getVideoIdList)
 
 	fileServer := http.FileServer(http.FS(web.Files))
 	mux.HandleFunc("/health", s.healthHandler)
@@ -238,8 +239,8 @@ func (s *Server) RetrieveVideoFile(w http.ResponseWriter, r *http.Request) {
 }
 
 // TODO: Endpoint for retreiving user information
-// List of videos uploaded
 // List of shared videos
+
 func (s *Server) getVideoIdList(w http.ResponseWriter, r *http.Request) {
 	type getUser struct {
 		Email string `json:"email"`
@@ -263,44 +264,37 @@ func (s *Server) getVideoIdList(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
-	//TODO: Finish
+
+	fileIds := s.db.GetMediaListByUserEmail(user.Email)
+
+	for _, fileId := range fileIds {
+		fmt.Println(fileId)
+	}
 }
 
 // WARN: Got this from an article. Double check
 // https://medium.com/@anajankow/fast-check-if-all-struct-fields-are-set-in-golang-bba1917213d2
 func ValidateStruct(s interface{}) (err error) {
-	// first make sure that the input is a struct
-	// having any other type, especially a pointer to a struct,
-	// might result in panic
+	// make sure that the input is a struct
 	structType := reflect.TypeOf(s)
 	if structType.Kind() != reflect.Struct {
 		return errors.New("input param should be a struct")
 	}
 
-	// now go one by one through the fields and validate their value
+	// go one by one through the fields and validate their value
 	structVal := reflect.ValueOf(s)
 	fieldNum := structVal.NumField()
 
 	for i := 0; i < fieldNum; i++ {
-		// Field(i) returns i'th value of the struct
 		field := structVal.Field(i)
 		fieldName := structType.Field(i).Name
 
 		// CAREFUL! IsZero interprets empty strings and int equal 0 as a zero value.
-		// To check only if the pointers have been initialized,
-
-		// you can check the kind of the field:
-		// if field.Kind() == reflect.Pointer { // check }
-
-		// IsZero panics if the value is invalid.
-		// Most functions and methods never return an invalid Value.
-
 		isSet := field.IsValid() && !field.IsZero()
 
 		if !isSet {
 			err = errors.New(fmt.Sprintf("%v%s in not set; ", err, fieldName))
 		}
-
 	}
 
 	return err

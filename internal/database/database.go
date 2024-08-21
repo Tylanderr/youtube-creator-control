@@ -25,6 +25,7 @@ type Service interface {
 	AddNewUser(addUser structs.AddUser) map[string]string
 	MediaUpload(fileId uuid.UUID, userId uuid.UUID) map[string]string
 	GetUserByEmail(email string) User
+	GetMediaListByUserEmail(email string) []uuid.UUID
 
 	// Close terminates the database connection.
 	// It returns an error if the connection cannot be closed.
@@ -164,6 +165,39 @@ func (s *service) GetUserByEmail(email string) User {
 	}
 
 	return user
+}
+
+func (s *service) GetMediaListByUserEmail(email string) []uuid.UUID {
+	query := `SELECT media.file_id FROM media JOIN users ON media.user_id = users.id WHERE users.email = $1`
+
+	fileIds := []uuid.UUID{}
+
+	rows, err := s.db.Query(query, email)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			fmt.Println(err)
+			return nil
+		} else {
+			log.Fatalf("Query failed: %v", err)
+		}
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		//HACK: This seems inefficient?
+		var file_id uuid.UUID
+
+		err := rows.Scan(&file_id)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fileIds = append(fileIds, file_id)
+
+	}
+
+	return fileIds
 }
 
 func (s *service) MediaUpload(fileId uuid.UUID, userId uuid.UUID) map[string]string {
