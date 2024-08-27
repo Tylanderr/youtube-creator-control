@@ -235,15 +235,8 @@ func (s *Server) getUserHandler(w http.ResponseWriter, r *http.Request) {
 
 // TODO: Endpoint for retreiving media file
 func (s *Server) RetrieveVideoFile(w http.ResponseWriter, r *http.Request) {
-
-}
-
-// TODO: Endpoint for retreiving user information
-// List of shared videos
-
-func (s *Server) getVideoIdList(w http.ResponseWriter, r *http.Request) {
-	type getUser struct {
-		Email string `json:"email"`
+	type getVideo struct {
+		VideoId uuid.UUID `json:"videoId"`
 	}
 
 	if r.Method != http.MethodGet {
@@ -259,17 +252,48 @@ func (s *Server) getVideoIdList(w http.ResponseWriter, r *http.Request) {
 
 	defer r.Body.Close()
 
-	var user getUser
-	if err := json.Unmarshal(body, &user); err != nil {
+	var video getVideo
+	if err := json.Unmarshal(body, &video); err != nil {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
 
+	//TODO: Return the video file as a response.
+
+}
+
+// TODO: Endpoint for retreiving user information
+// List of shared videos
+
+// Return the list of video id's and storage paths for a requested user
+//TODO: This should also get the path of where the file is kept on the NAS
+func (s *Server) getVideoIdList(w http.ResponseWriter, r *http.Request) []uuid.UUID {
+	type getUser struct {
+		Email string `json:"email"`
+	}
+
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return nil
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Unable to read request body", http.StatusBadRequest)
+		return nil
+	}
+
+	defer r.Body.Close()
+
+	var user getUser
+	if err := json.Unmarshal(body, &user); err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return nil
+	}
+
 	fileIds := s.db.GetMediaListByUserEmail(user.Email)
 
-	for _, fileId := range fileIds {
-		fmt.Println(fileId)
-	}
+	return fileIds
 }
 
 // WARN: Got this from an article. Double check
