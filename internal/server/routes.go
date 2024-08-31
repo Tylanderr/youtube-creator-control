@@ -258,8 +258,27 @@ func (s *Server) RetrieveVideoFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//TODO: Return the video file as a response.
+	// Create filepath using the passed in videoId
+	mediaFilePath := UPLOAD_DIRECTORY + video.VideoId.String()
 
+	// open the file
+	file, err := os.Open(mediaFilePath)
+	if err != nil {
+		http.Error(w, "File not found.", 404)
+		return
+	}
+
+	defer file.Close()
+
+	// Get file's Content-Type for correct response header
+	mimeType := "application/octet-stream"
+	w.Header().Set("Content-Type", mimeType)
+
+	// Set Content-Disposition header to download file
+	w.Header().Set("Content-Disposition", "attachment; filename="+filepath.Base(mediaFilePath))
+
+	// Serve the file
+	http.ServeFile(w, r, mediaFilePath)
 }
 
 // TODO: Endpoint for retreiving user information
@@ -267,20 +286,20 @@ func (s *Server) RetrieveVideoFile(w http.ResponseWriter, r *http.Request) {
 
 // Return the list of video id's and storage paths for a requested user
 //TODO: This should also get the path of where the file is kept on the NAS
-func (s *Server) getVideoIdList(w http.ResponseWriter, r *http.Request) []uuid.UUID {
+func (s *Server) getVideoIdList(w http.ResponseWriter, r *http.Request) {
 	type getUser struct {
 		Email string `json:"email"`
 	}
 
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return nil
+		return
 	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Unable to read request body", http.StatusBadRequest)
-		return nil
+		return
 	}
 
 	defer r.Body.Close()
@@ -288,12 +307,15 @@ func (s *Server) getVideoIdList(w http.ResponseWriter, r *http.Request) []uuid.U
 	var user getUser
 	if err := json.Unmarshal(body, &user); err != nil {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
-		return nil
+		return
 	}
 
-	fileIds := s.db.GetMediaListByUserEmail(user.Email)
+	fileIds, err := json.Marshal(s.db.GetMediaListByUserEmail(user.Email))
+	if err != nil {
+		log.Fatalf("error handling JSON marshal. Err: %v", err)
+	}
 
-	return fileIds
+	_, _ = w.Write(fileIds)
 }
 
 // WARN: Got this from an article. Double check
