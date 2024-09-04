@@ -129,6 +129,7 @@ func (s *service) Close() error {
 	return s.db.Close()
 }
 
+// Write new user to database
 func (s *service) AddNewUser(addUser structs.AddUser) map[string]string {
 
 	status := make(map[string]string)
@@ -145,6 +146,7 @@ func (s *service) AddNewUser(addUser structs.AddUser) map[string]string {
 
 	return status
 }
+
 
 func (s *service) GetUserByEmail(email string) User {
 	query := `SELECT * FROM users WHERE email = $1`
@@ -167,6 +169,7 @@ func (s *service) GetUserByEmail(email string) User {
 	return user
 }
 
+
 func (s *service) GetMediaListByUserEmail(email string) []uuid.UUID {
 	query := `SELECT media.file_id FROM media JOIN users ON media.user_id = users.id WHERE users.email = $1`
 
@@ -185,7 +188,6 @@ func (s *service) GetMediaListByUserEmail(email string) []uuid.UUID {
 	defer rows.Close()
 
 	for rows.Next() {
-		//HACK: This seems inefficient?
 		var file_id uuid.UUID
 
 		err := rows.Scan(&file_id)
@@ -214,5 +216,4 @@ func (s *service) MediaUpload(fileId uuid.UUID, userId uuid.UUID) map[string]str
 	status["write_successful"] = "true"
 
 	return status
-
 }

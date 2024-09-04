@@ -52,6 +52,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	// GET handlers
 	mux.HandleFunc("GET /getUser", s.getUserHandler)
 	mux.HandleFunc("GET /files", s.getVideoIdList)
+	mux.HandleFunc("GET /downloadMedia", s.downloadVideoFile)
 
 	fileServer := http.FileServer(http.FS(web.Files))
 	mux.HandleFunc("/health", s.healthHandler)
@@ -175,7 +176,8 @@ func (s *Server) UploadMediaFile(w http.ResponseWriter, r *http.Request) {
 	fileId := uuid.New()
 
 	// Create new file in the upload directory
-	dst, err := os.Create(fmt.Sprintf("%v%v%s", UPLOAD_DIRECTORY, fileId, filepath.Ext(fileHeader.Filename)))
+	filepath := fmt.Sprintf("%v%v%s", UPLOAD_DIRECTORY, fileId, filepath.Ext(fileHeader.Filename))
+	dst, err := os.Create(filepath)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -190,13 +192,16 @@ func (s *Server) UploadMediaFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//TODO: Replace this
-	// Pass user email when request comes from front end?
-	response := s.db.GetUserByEmail("test@gmail.com")
-
-	s.db.MediaUpload(fileId, response.Id)
+	// Get the currently logged in loggedInUser. Associate the file to the user
+	loggedInUser := s.db.GetUserByEmail(getLoggedInUser())
+	s.db.MediaUpload(fileId, loggedInUser.Id)
 
 	fmt.Fprintf(w, "Upload successful\n")
+}
+
+// TODO: Once there is a basic front end for authentication, how will I store the currently logged in user within the session state?
+func getLoggedInUser() string {
+	return "test@gmail.com"
 }
 
 /////////// GET Methods ///////////
@@ -233,8 +238,7 @@ func (s *Server) getUserHandler(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(jsonResp)
 }
 
-// TODO: Endpoint for retreiving media file
-func (s *Server) RetrieveVideoFile(w http.ResponseWriter, r *http.Request) {
+func (s *Server) downloadVideoFile(w http.ResponseWriter, r *http.Request) {
 	type getVideo struct {
 		VideoId uuid.UUID `json:"videoId"`
 	}
@@ -281,11 +285,12 @@ func (s *Server) RetrieveVideoFile(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, mediaFilePath)
 }
 
-// TODO: Endpoint for retreiving user information
-// List of shared videos
+//TODO: Endpoint for retreiving user information
+func (s *Server) getUserInformation(w http.ResponseWriter, r *http.Request) {
+
+}
 
 // Return the list of video id's and storage paths for a requested user
-//TODO: This should also get the path of where the file is kept on the NAS
 func (s *Server) getVideoIdList(w http.ResponseWriter, r *http.Request) {
 	type getUser struct {
 		Email string `json:"email"`
